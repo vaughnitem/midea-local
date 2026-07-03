@@ -267,7 +267,7 @@ class MideaACDevice(MideaDevice):
             MessageCapabilitiesAdditionalQuery(self._message_protocol_version),
         ]
 
-    def process_message(self, msg: bytes) -> dict[str, Any]:
+    def process_message(self, msg: bytes) -> dict[str, Any]:  # noqa: C901
         """Midea AC device process message."""
         message = MessageACResponse(bytearray(msg), self._power_analysis_method)
         _LOGGER.debug("[%s] Received: %s", self.device_id, message)
