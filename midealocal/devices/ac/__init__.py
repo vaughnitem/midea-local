@@ -74,6 +74,7 @@ class DeviceAttributes(StrEnum):
     current_operating_time = "current_operating_time"
     wind_lr_angle = "wind_lr_angle"
     wind_ud_angle = "wind_ud_angle"
+    rate_select = "rate_select"
     out_silent = "out_silent"
     anion = "anion"
     sound = "sound"
@@ -110,6 +111,15 @@ class MideaACDevice(MideaDevice):
         50: "middle",
         75: "down-mid",
         100: "down",
+    }
+
+    _rate_selects: ClassVar[dict[int, str]] = {
+        1: "1",
+        20: "20",
+        40: "40",
+        60: "60",
+        80: "80",
+        100: "100",
     }
 
     def __init__(
@@ -164,6 +174,7 @@ class MideaACDevice(MideaDevice):
                 DeviceAttributes.fresh_air_2: None,
                 DeviceAttributes.wind_lr_angle: None,
                 DeviceAttributes.wind_ud_angle: None,
+                DeviceAttributes.rate_select: None,
                 DeviceAttributes.out_silent: False,
                 DeviceAttributes.anion: False,
                 DeviceAttributes.sound: True,
@@ -209,6 +220,11 @@ class MideaACDevice(MideaDevice):
         """Midea AC device wind_ud_angle."""
         return list(MideaACDevice._wind_ud_angles.values())
 
+    @property
+    def rate_selects(self) -> list[str]:
+        """Midea AC device rate_select options."""
+        return list(MideaACDevice._rate_selects.values())
+
     def build_query(
         self,
     ) -> list[
@@ -238,7 +254,7 @@ class MideaACDevice(MideaDevice):
             MessageCapabilitiesAdditionalQuery(self._message_protocol_version),
         ]
 
-    def process_message(self, msg: bytes) -> dict[str, Any]:
+    def process_message(self, msg: bytes) -> dict[str, Any]:  # noqa: C901
         """Midea AC device process message."""
         message = MessageACResponse(bytearray(msg), self._power_analysis_method)
         _LOGGER.debug("[%s] Received: %s", self.device_id, message)
@@ -261,6 +277,8 @@ class MideaACDevice(MideaDevice):
                 # wind_ud_angle
                 elif attr == DeviceAttributes.wind_ud_angle:
                     self._attributes[attr] = MideaACDevice._wind_ud_angles.get(value)
+                elif attr == DeviceAttributes.rate_select:
+                    self._attributes[attr] = MideaACDevice._rate_selects.get(value)
                 else:
                     self._attributes[attr] = value
                 new_status[str(attr)] = self._attributes[attr]
@@ -429,6 +447,12 @@ class MideaACDevice(MideaDevice):
                     ]
                 )
                 setattr(message, str(self._fresh_air_version), fresh_air)
+        # rate_select
+        elif attr == DeviceAttributes.rate_select:
+            message.rate_select = MideaACDevice.get_dict_key_by_value(
+                "_rate_selects",
+                str(value),
+            )
         # indirect_wind, screen_display_alternate, breezeless
         else:
             setattr(message, str(attr), value)
@@ -499,6 +523,7 @@ class MideaACDevice(MideaDevice):
                 DeviceAttributes.fresh_air_mode,
                 DeviceAttributes.wind_lr_angle,
                 DeviceAttributes.wind_ud_angle,
+                DeviceAttributes.rate_select,
                 DeviceAttributes.out_silent,
                 DeviceAttributes.sound,
                 DeviceAttributes.self_clean,
